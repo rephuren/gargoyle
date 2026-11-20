@@ -31,7 +31,7 @@ class TestMiddleware < Minitest::Test
     assert_equal 200, r.status
     assert_includes r.body, mw.honeytokens.tokens.first
     assert_equal "decoy", events.first["action"]
-    login = request(mw, "GET", "/wp-login.php?x=<b>")
+    login = request(mw, "GET", "/wp-login.php?x=%3Cb%3E")
     assert_includes login.body, "<form"
     refute_includes login.body, "<b>"
   end
