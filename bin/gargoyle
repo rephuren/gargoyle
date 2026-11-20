@@ -1,0 +1,40 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+$LOAD_PATH.unshift File.expand_path("../lib", __dir__)
+require "gargoyle"
+require "optparse"
+
+USAGE = <<~U
+  usage:
+    gargoyle report LOG.jsonl [--json|--html]
+    gargoyle rules
+    gargoyle demo [--out demo.jsonl]
+U
+
+cmd = ARGV.shift
+case cmd
+when "rules"
+  Gargoyle::RULES.each { |r| puts format("%-18s %-6s %-6s %-9s %s", r.id, r.severity, r.owasp, r.attack, r.title) }
+when "report"
+  fmt = :text
+  OptionParser.new { |o| o.on("--json") { fmt = :json }; o.on("--html") { fmt = :html } }.parse!(ARGV)
+  path = ARGV.first or abort(USAGE)
+  begin
+    rep = Gargoyle::Report.from_file(path)
+  rescue SystemCallError => e
+    warn "error: #{e.message}"
+    exit 2
+  end
+  puts({ text: rep.to_text, json: JSON.pretty_generate(rep.summary), html: rep.to_html }[fmt])
+  exit(rep.events.empty? ? 0 : 1)
+when "demo"
+  out = "demo.jsonl"
+  OptionParser.new { |o| o.on("--out FILE") { |v| out = v } }.parse!(ARGV)
+  File.write(out, "")
+  Gargoyle::Demo.run(out)
+  puts "wrote #{out}"
+  puts Gargoyle::Report.from_file(out).to_text
+else
+  abort USAGE
+end
