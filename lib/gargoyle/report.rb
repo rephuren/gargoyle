@@ -28,6 +28,14 @@ module Gargoyle
       @bad_lines = bad_lines
     end
 
+    SEVERITY_RANK = { "info" => 0, "low" => 1, "medium" => 2, "high" => 3 }.freeze
+
+    # A report with only the events at or above the given severity. Events with an unknown severity count as info.
+    def at_least(severity)
+      min = SEVERITY_RANK.fetch(severity.to_s) { raise ArgumentError, "unknown severity #{severity.inspect}, use #{SEVERITY_RANK.keys.join('/')}" }
+      self.class.new(@events.select { |e| SEVERITY_RANK.fetch(e["severity"].to_s, 0) >= min }, @bad_lines)
+    end
+
     def tally(key)
       @events.flat_map { |e| Array(e[key]) }.tally.sort_by { |k, v| [-v, k.to_s] }.to_h
     end

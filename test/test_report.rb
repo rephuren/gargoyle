@@ -56,4 +56,22 @@ class TestReport < Minitest::Test
     assert_equal 0, st.exitstatus
     assert_includes out, "log4shell"
   end
+
+  def test_min_severity_keeps_only_events_at_or_above_the_level
+    rep = Gargoyle::Report.new([{ "severity" => "low" }, { "severity" => "high" }, { "severity" => "info" }, { "severity" => "weird" }])
+    assert_equal 1, rep.at_least("high").events.size
+    assert_equal 2, rep.at_least(:low).events.size
+    assert_equal 4, rep.at_least("info").events.size
+    assert_raises(ArgumentError) { rep.at_least("urgent") }
+  end
+
+  def test_cli_min_severity_filters_and_rejects_bad_values
+    log = demo_log
+    bin = File.expand_path("../bin/gargoyle", __dir__)
+    out, = Open3.capture2(RbConfig.ruby, bin, "report", log, "--json", "--min-severity", "high")
+    assert JSON.parse(out)["by_severity"].keys.all? { |k| k == "high" }
+    _, err, st = Open3.capture3(RbConfig.ruby, bin, "report", log, "--min-severity", "urgent")
+    assert_equal 2, st.exitstatus
+    assert_match(/unknown severity/, err)
+  end
 end

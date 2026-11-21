@@ -7,7 +7,7 @@ require "optparse"
 
 USAGE = <<~U
   usage:
-    gargoyle report LOG.jsonl [--json|--html]
+    gargoyle report LOG.jsonl [--json|--html] [--min-severity info|low|medium|high]
     gargoyle rules
     gargoyle demo [--out demo.jsonl]
 U
@@ -18,11 +18,18 @@ when "rules"
   Gargoyle::RULES.each { |r| puts format("%-18s %-6s %-6s %-9s %s", r.id, r.severity, r.owasp, r.attack, r.title) }
 when "report"
   fmt = :text
-  OptionParser.new { |o| o.on("--json") { fmt = :json }; o.on("--html") { fmt = :html } }.parse!(ARGV)
+  min = nil
+  OptionParser.new { |o| o.on("--json") { fmt = :json }; o.on("--html") { fmt = :html }; o.on("--min-severity LEVEL") { |v| min = v } }.parse!(ARGV)
   path = ARGV.first or abort(USAGE)
   begin
     rep = Gargoyle::Report.from_file(path)
   rescue SystemCallError => e
+    warn "error: #{e.message}"
+    exit 2
+  end
+  begin
+    rep = rep.at_least(min) if min
+  rescue ArgumentError => e
     warn "error: #{e.message}"
     exit 2
   end
