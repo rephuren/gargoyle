@@ -16,10 +16,12 @@ run MyApp
 ```bash
 bundle install
 bundle exec ruby bin/gargoyle demo --out demo.jsonl   # придуманный трафик, без сети
-bundle exec ruby bin/gargoyle report gargoyle.jsonl [--json|--html]
+bundle exec ruby bin/gargoyle report gargoyle.jsonl [--json|--html] [--min-severity high]
 bundle exec ruby bin/gargoyle rules
 bundle exec rake test
 ```
+
+`--min-severity` оставляет события не ниже уровня (`info`, `low`, `medium`, `high`); код возврата считается уже по ним.
 
 Код возврата `report`: `0` событий нет, `1` есть, `2` ошибка (нет файла).
 
